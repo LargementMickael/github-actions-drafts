@@ -1,0 +1,54 @@
+{
+  "name": "github-actions-boilerplate",
+  "version": "1.0.0",
+  "description": "A comprehensive GitHub Actions boilerplate",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ --ext .ts,.js",
+    "lint:fix": "eslint src/ --ext .ts,.js --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/username/repo.git"
+  },
+  "keywords": [
+    "github-actions",
+    "ci-cd",
+    "boilerplate",
+    "automation"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.15.0",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "eslint": "^8.37.0",
+    "husky": "^8.0.3",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.7",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.2"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.{ts,js}",
+      "!src/**/*.d.ts"
+    ]
+  }
+}
