@@ -1,0 +1,113 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Detect project type and setup
+      id: setup
+      run: |
+        if [ -f "package.json" ]; then
+          echo "type=node" >> $GITHUB_OUTPUT
+        elif [ -f "requirements.txt" ] && [ -d "docs" ]; then
+          echo "type=python-docs" >> $GITHUB_OUTPUT
+        elif [ -f "_config.yml" ] || [ -f "_config.yaml" ]; then
+          echo "type=jekyll" >> $GITHUB_OUTPUT
+        else
+          echo "type=static" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Setup Node.js
+      if: steps.setup.outputs.type == 'node'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Setup Python
+      if: steps.setup.outputs.type == 'python-docs'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Setup Ruby
+      if: steps.setup.outputs.type == 'jekyll'
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: true
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+
+    - name: Build Node.js project
+      if: steps.setup.outputs.type == 'node'
+      run: |
+        npm ci
+        npm run build
+        # Assume build output is in 'dist' or 'build' directory
+        if [ -d "dist" ]; then
+          cp -r dist _site
+        elif [ -d "build" ]; then
+          cp -r build _site
+        fi
+
+    - name: Build Python docs
+      if: steps.setup.outputs.type == 'python-docs'
+      run: |
+        pip install -r requirements.txt
+        pip install sphinx sphinx-rtd-theme
+        cd docs
+        make html
+        cp -r _build/html ../_site
+
+    - name: Build Jekyll site
+      if: steps.setup.outputs.type == 'jekyll'
+      run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+      env:
+        JEKYLL_ENV: production
+
+    - name: Prepare static files
+      if: steps.setup.outputs.type == 'static'
+      run: |
+        mkdir -p _site
+        # Copy static files to _site directory
+        if [ -d "public" ]; then
+          cp -r public/* _site/
+        elif [ -d "docs" ]; then
+          cp -r docs/* _site/
+        else
+          echo "<h1>GitHub Actions Boilerplate</h1>" > _site/index.html
+          echo "<p>Welcome to the GitHub Actions boilerplate repository!</p>" >> _site/index.html
+        fi
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2

@@ -1,0 +1,81 @@
+name: Test Workflows
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ '.github/workflows/**' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ '.github/workflows/**' ]
+
+jobs:
+  validate-workflows:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate workflow syntax
+      run: |
+        echo "Validating YAML syntax for all workflow files..."
+        for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+          if [ -f "$file" ]; then
+            echo "Validating $file"
+            python -c "import yaml; yaml.safe_load(open('$file'))" || {
+              echo "❌ Invalid YAML syntax in $file"
+              exit 1
+            }
+            echo "✅ $file is valid"
+          fi
+        done
+
+    - name: Check for required permissions
+      run: |
+        echo "Checking workflow permissions..."
+        grep -r "permissions:" .github/workflows/ || echo "No explicit permissions found"
+
+    - name: Check for pinned action versions
+      run: |
+        echo "Checking for pinned action versions..."
+        if grep -r "uses:.*@main\|uses:.*@master" .github/workflows/; then
+          echo "⚠️  Warning: Found unpinned action versions using @main or @master"
+          echo "Consider pinning to specific versions for better security"
+        else
+          echo "✅ All actions appear to be pinned to specific versions"
+        fi
+
+    - name: Validate action references
+      run: |
+        echo "Extracting action references..."
+        grep -r "uses:" .github/workflows/ | sed 's/.*uses: *//' | sed 's/@.*//' | sort -u > actions.txt
+        echo "Found these actions:"
+        cat actions.txt
+
+  test-example-configs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Test example package.json
+      run: |
+        if [ -f "package.json.example" ]; then
+          echo "Validating example package.json..."
+          node -e "JSON.parse(require('fs').readFileSync('package.json.example', 'utf8'))" && echo "✅ Valid JSON"
+        fi
+
+    - name: Test Docker configuration
+      run: |
+        if [ -f "Dockerfile" ]; then
+          echo "Validating Dockerfile..."
+          docker run --rm -i hadolint/hadolint < Dockerfile || echo "Dockerfile could be improved"
+        fi
+
+    - name: Test configuration files
+      run: |
+        for file in .eslintrc.json .prettierrc .commitlintrc.json; do
+          if [ -f "$file" ]; then
+            echo "Validating $file..."
+            python -c "import json; json.load(open('$file'))" && echo "✅ $file is valid JSON"
+          fi
+        done
