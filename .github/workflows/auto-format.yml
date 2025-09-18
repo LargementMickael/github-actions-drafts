@@ -1,0 +1,71 @@
+name: Auto Format Code
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.head_ref }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        if [ -f package.json ]; then
+          npm ci
+        fi
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python formatting tools
+      run: |
+        pip install black isort
+
+    - name: Format JavaScript/TypeScript files
+      run: |
+        if [ -f package.json ] && npm list prettier &>/dev/null; then
+          npx prettier --write "**/*.{js,jsx,ts,tsx,json,css,md}"
+        fi
+
+    - name: Format Python files
+      run: |
+        if find . -name "*.py" -not -path "./.git/*" | grep -q .; then
+          black .
+          isort .
+        fi
+
+    - name: Check for changes
+      id: changes
+      run: |
+        if git diff --quiet; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit changes
+      if: steps.changes.outputs.has_changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Auto-format code"
+        git push

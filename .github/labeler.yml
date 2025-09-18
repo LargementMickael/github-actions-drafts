@@ -1,0 +1,46 @@
+# Configuration for PR labeler
+# Add labels based on file paths changed in PRs
+
+documentation:
+  - '**/*.md'
+  - 'docs/**/*'
+
+ci:
+  - '.github/**/*'
+  - '**/*ci*'
+  - '**/*workflow*'
+
+dependencies:
+  - 'package*.json'
+  - 'requirements*.txt'
+  - 'Pipfile*'
+  - 'yarn.lock'
+  - 'poetry.lock'
+  - 'Gemfile*'
+  - 'go.mod'
+  - 'go.sum'
+
+docker:
+  - 'Dockerfile*'
+  - 'docker-compose*.yml'
+  - '.dockerignore'
+
+frontend:
+  - 'src/**/*.{js,jsx,ts,tsx,vue,html,css,scss,sass}'
+  - 'public/**/*'
+  - 'static/**/*'
+
+backend:
+  - 'src/**/*.{py,java,go,rb,php,cs}'
+  - 'server/**/*'
+  - 'api/**/*'
+
+tests:
+  - '**/*test*'
+  - '**/*spec*'
+  - 'tests/**/*'
+
+configuration:
+  - '**/*.{json,yml,yaml,toml,ini,cfg,conf}'
+  - '.env*'
+  - '.*rc*'
